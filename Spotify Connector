@@ -1,26 +1,27 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy import Spotify
+import WebScrape
 import pandas as pd
 import os
 
-#Rock List
-music = pd.read_excel(r'c:\Users\dreik\Desktop\Rock_Music_Through_Decades_1.xlsx')
-
-music_df = music[['Band','Song']]
-
+#sample data for testing
+# data = {
+#     'Band': ['AC/DC','AC/DC','AC/DC','AC/DC','AC/DC','The Black Keys','Three Days Grace','Shinedown','Robert Plant, Jimmy Page'],
+#     'Song': ['Big Gun','Hard as a Rock','Rock N Roll Train','Shot in the Dark','Stiff Upper Lip','Lo/Hi','Infra-Red','Diamond Eyes','Most High']
+# }
 
 #global values
-clientid = '4612c08179434a02b00336f6772773a2'
-clientsecret = '85dd986003cc4afd91bcce00294b1c2c'
-redirecturi = 'http://localhost:7777/callback'
+clientid = 'Your-Client-ID'
+clientsecret = 'Your-Client-Secret'
+redirecturi = 'Your-Redirect-URI'
 
 
-#sample data for testing
-data = {
-    'Band': ['3 Doors Down','Aerosmith','Alice in Chains','Asking Alexandria','Breaking Benjamin'],
-    'Song': ['Kryptonite','Falling in Love Is Hard on the Knees','Your Decision','Alone Again','I Will Not Bow']
-}
+#Rock List
+music = WebScrape.big_df
+
+music_df = music[['Artist','Song']]
+
 
 def retrieve_auth(clientid, clientsecret, redirecturi):
     sp_oauth = SpotifyOAuth(client_id=clientid, client_secret=clientsecret, redirect_uri=redirecturi)
@@ -29,8 +30,7 @@ def retrieve_auth(clientid, clientsecret, redirecturi):
 
 sp = retrieve_auth(clientid, clientsecret, redirecturi)
 
-
-
+#--- gets track ID amnd other song related bits
 def search_song(song_name,artist_name,spotify_client):
     query = f'track:{song_name} artist:{artist_name}'
     result = spotify_client.search(q=query,limit=1,type='track')
@@ -39,25 +39,79 @@ def search_song(song_name,artist_name,spotify_client):
     else:
         return None
 
-
 all_songs_info = []
 
-for band, song in zip(data['Band'],data['Song']):
-    song_info = search_song(song,band,sp)
-    songs = { 'Song': song_info['name'],
+for band, song in zip(music_df['Artist'], music_df['Song']):
+    song_info = search_song(song, band, sp)
+    if song_info:
+        songs = {'Song': song_info['name'],
                 'Band': song_info['artists'][0]['name'],
                 'Album': song_info['album']['name'],
                 'Track ID': song_info['id'],
-                'Preview URL' : song_info['preview_url']
-        
-    }
-    all_songs_info.append(songs)
+                'Popularity': song_info['popularity'],
+                'Preview URL': song_info['preview_url']
+                }
+        all_songs_info.append(songs)
+    else:
+        print(f"No information found for '{song}' by '{band}'.")
 
 songs_df = pd.DataFrame(all_songs_info)
-print(songs_df)
 
-desktop_path = os.path.join(os.path.expanduser("~"),"Desktop")
-output_filename = "Songs Information.csv"
-output_path = os.path.join(desktop_path,output_filename)
 
-songs_df.to_csv(output_path, index=False)
+
+def get_audio_features(track_ids):
+    # Initialize an empty list to store audio features for all tracks
+    all_audio_features = []
+    
+    # Iterate over the track IDs in batches of 100
+    for i in range(0, len(track_ids), 100):
+        # Get a batch of 100 track IDs
+        batch_ids = track_ids[i:i+100]
+        
+        # Call the Spotify API to retrieve audio features for the batch of track IDs
+        audio_features_batch = sp.audio_features(batch_ids)
+        
+        # Extend the list of audio features with the features from the current batch
+        all_audio_features.extend(audio_features_batch)
+    
+    return all_audio_features
+
+flattened_audio_info = []
+
+# Get all track IDs from the songs_df DataFrame
+track_ids = songs_df['Track ID'].tolist()
+
+# Call get_audio_features function with all track IDs
+audio_features = get_audio_features(track_ids)
+
+# Iterate over audio features and append to the flattened_audio_info list
+for features in audio_features:
+    if features:
+        flattened_audio_info.append(pd.json_normalize(features))
+
+# Concatenate all flattened dictionaries into a single DataFrame
+audio_df = pd.concat(flattened_audio_info, ignore_index=True)
+
+# Merge audio_df with songs_df
+merged_df = pd.merge(songs_df, audio_df, left_on='Track ID', right_on='id', how='inner')
+
+# Drop unnecessary columns
+merged_df = merged_df.drop(columns=['id', 'analysis_url', 'uri', 'track_href'])
+
+# Drop duplicate rows
+merged_df = merged_df.drop_duplicates()
+
+# Print or save the merged DataFrame
+# print(merged_df)
+
+
+#--- Writes an output
+# Get the directory of the current Python script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Save the big DataFrame to a CSV file in the same directory as the script
+output_filename = "Song Information.csv"
+output_path = os.path.join(script_dir, output_filename)
+merged_df.to_csv(output_path, index=False, encoding='utf-8')
+#---
+print(merged_df.head())
