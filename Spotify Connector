@@ -7,20 +7,20 @@ import os
 
 #sample data for testing
 # data = {
-#     'Band': ['AC/DC','AC/DC','AC/DC','AC/DC','AC/DC','The Black Keys','Three Days Grace','Shinedown','Robert Plant, Jimmy Page'],
-#     'Song': ['Big Gun','Hard as a Rock','Rock N Roll Train','Shot in the Dark','Stiff Upper Lip','Lo/Hi','Infra-Red','Diamond Eyes','Most High']
+#     'Artist': ['Van Halen','Robert Plant, Jimmy Page','Aaron Lewis, Fred Durst','Stone Temple Pilots, Chester Bennington','Metallica'],
+#     'Song': ['(Oh) Pretty Woman','Most High','Outside','Out of Time','All Within My Hands']
 # }
 
 #global values
-clientid = 'Your-Client-ID'
-clientsecret = 'Your-Client-Secret'
-redirecturi = 'Your-Redirect-URI'
+clientid = 'your-client-id'
+clientsecret = 'your-client-secret'
+redirecturi = 'your-redirect-uri'
 
 
-#Rock List
-music = WebScrape.big_df
+# #Rock List
+# music = WebScrape.big_df
 
-music_df = music[['Artist','Song']]
+# music_df = music[['Artist','Song']]
 
 
 def retrieve_auth(clientid, clientsecret, redirecturi):
@@ -41,7 +41,7 @@ def search_song(song_name,artist_name,spotify_client):
 
 all_songs_info = []
 
-for band, song in zip(music_df['Artist'], music_df['Song']):
+for band, song in zip(data['Artist'], data['Song']):
     song_info = search_song(song, band, sp)
     if song_info:
         songs = {'Song': song_info['name'],
@@ -110,7 +110,7 @@ merged_df = merged_df.drop_duplicates()
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Save the big DataFrame to a CSV file in the same directory as the script
-output_filename = "Song Information.csv"
+output_filename = "Song Information extra.csv"
 output_path = os.path.join(script_dir, output_filename)
 merged_df.to_csv(output_path, index=False, encoding='utf-8')
 #---
