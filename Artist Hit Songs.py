@@ -1,11 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import time
 import os
 
 # Read the CSV file and clean the band names
-rock_list = r'c:\Users\dreik\Desktop\Combined_Rock_List.csv'
+rock_list = 'Rock Lists Combined.csv'
 df = pd.read_csv(rock_list, encoding='latin1')
 df['Artist'] = df['Artist'].str.replace(' ', '-')
 
@@ -45,10 +44,10 @@ for band in df['Artist'].unique():
         peak_date = spans[4].get_text(strip=True)
 
         # Append the data to the list
-        data.append([song_name, artist_name, debut_date, peak_pos, peak_weeks, peak_date])
+        data.append([band,song_name, artist_name, debut_date, peak_pos, peak_weeks, peak_date])
 
     # Create a DataFrame from the data
-    band_df = pd.DataFrame(data, columns=['Song Name', 'Artist Name', 'Debut Date', 'Peak Pos', 'Peak Weeks', 'Peak Date'])
+    band_df = pd.DataFrame(data, columns=['Scraped Band','Song Name', 'Artist Name', 'Debut Date', 'Peak Pos', 'Peak Weeks', 'Peak Date'])
 
     # Append the DataFrame for this band to the result DataFrame
     result_df = pd.concat([result_df, band_df], ignore_index=True)
@@ -60,6 +59,6 @@ print(result_df)
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Save the big DataFrame to a CSV file in the same directory as the script
-output_filename = "Webscraped Bands.csv"
+output_filename = "Webscraped Bands Info.csv"
 output_path = os.path.join(script_dir, output_filename)
 result_df.to_csv(output_path, index=False, encoding='utf-8')

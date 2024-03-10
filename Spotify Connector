@@ -12,15 +12,14 @@ import os
 # }
 
 #global values
-clientid = 'your-client-id'
-clientsecret = 'your-client-secret'
-redirecturi = 'your-redirect-uri'
+clientid = 'Your-ID'
+clientsecret = 'Your-Secret'
+redirecturi = 'Your-URI'
 
 
 # #Rock List
-# music = WebScrape.big_df
-
-# music_df = music[['Artist','Song']]
+music = WebScrape.big_df
+music_df = pd.DataFrame(music[['Artist','Song']])
 
 
 def retrieve_auth(clientid, clientsecret, redirecturi):
@@ -41,7 +40,7 @@ def search_song(song_name,artist_name,spotify_client):
 
 all_songs_info = []
 
-for band, song in zip(data['Artist'], data['Song']):
+for band, song in zip(music_df['Artist'], music_df['Song']):
     song_info = search_song(song, band, sp)
     if song_info:
         songs = {'Song': song_info['name'],
@@ -110,7 +109,7 @@ merged_df = merged_df.drop_duplicates()
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Save the big DataFrame to a CSV file in the same directory as the script
-output_filename = "Song Information extra.csv"
+output_filename = "Webscraped Bands Song Info.csv"
 output_path = os.path.join(script_dir, output_filename)
 merged_df.to_csv(output_path, index=False, encoding='utf-8')
 #---
